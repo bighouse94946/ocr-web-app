@@ -2,7 +2,7 @@
   "version": 2,
   "builds": [
     {
-      "src": "api/server.js",
+      "src": "api/upload.js",
       "use": "@vercel/node"
     },
     {
@@ -12,16 +12,12 @@
   ],
   "routes": [
     {
-      "src": "/api/(.*)",
-      "dest": "api/server.js"
-    },
-    {
       "src": "/upload",
-      "dest": "api/server.js"
+      "dest": "api/upload.js"
     },
     {
-      "src": "/uploads/(.*)",
-      "dest": "api/server.js"
+      "src": "/health",
+      "dest": "api/health.js"
     },
     {
       "src": "/",
@@ -30,14 +26,10 @@
     {
       "src": "/(.*\\.(css|js|html|ico|png|jpg|jpeg|gif|svg|woff|woff2|ttf|eot))",
       "dest": "public/$1"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "api/server.js"
     }
   ],
   "functions": {
-    "api/server.js": {
+    "api/upload.js": {
       "maxDuration": 30
     }
   }
