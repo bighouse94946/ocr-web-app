@@ -13,18 +13,23 @@ async function testRealImage() {
         console.log('📤 发送真实图片测试...');
         const startTime = Date.now();
         
-        // 匹配n8n Extract from File节点的期望格式
-        const testImageBase64 = testImage.replace('data:image/png;base64,', '');
+        // 发送二进制文件数据以匹配n8n Extract from File节点
+        const FormData = require('form-data');
+        const formData = new FormData();
         
-        const response = await axios.post(webhookUrl, {
-            data: testImageBase64,  // 纯base64数据
+        const testImageBase64 = testImage.replace('data:image/png;base64,', '');
+        const imageBuffer = Buffer.from(testImageBase64, 'base64');
+        
+        // 添加二进制文件数据，字段名为"data"
+        formData.append('data', imageBuffer, {
             filename: 'test-text.png',
-            mimeType: 'image/png',
-            originalData: testImage  // 完整格式作为备用
-        }, {
+            contentType: 'image/png'
+        });
+        
+        const response = await axios.post(webhookUrl, formData, {
             timeout: 15000,
             headers: {
-                'Content-Type': 'application/json'
+                ...formData.getHeaders()
             }
         });
         

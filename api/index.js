@@ -69,16 +69,23 @@ app.post('/upload', upload.single('image'), async (req, res) => {
         
         console.log('调用n8n Webhook...');
         
-        // 为n8n Extract from File节点准备正确的数据格式
-        const webhookResponse = await axios.post(webhookUrl, {
-            data: base64Image,  // 直接发送base64数据，不带data:mime前缀
+        // 为n8n Extract from File节点发送二进制文件数据
+        const FormData = require('form-data');
+        const formData = new FormData();
+        
+        // 将base64转换回Buffer（二进制数据）
+        const imageBuffer = Buffer.from(base64Image, 'base64');
+        
+        // 添加文件数据，字段名为"data"以匹配n8n节点配置
+        formData.append('data', imageBuffer, {
             filename: req.file.originalname,
-            mimeType: mimeType,
-            originalData: `data:${mimeType};base64,${base64Image}` // 备用完整格式
-        }, {
+            contentType: mimeType
+        });
+        
+        const webhookResponse = await axios.post(webhookUrl, formData, {
             timeout: 8000, // 8秒超时，给OCR处理充足时间
             headers: {
-                'Content-Type': 'application/json'
+                ...formData.getHeaders()
             }
         });
 
