@@ -17,11 +17,27 @@
     },
     {
       "src": "/diagnosis.html",
-      "dest": "api/index.js"
+      "dest": "public/diagnosis.html"
     },
     {
       "src": "/test.html", 
-      "dest": "api/index.js"
+      "dest": "public/test.html"
+    },
+    {
+      "src": "/style.css",
+      "dest": "public/style.css"
+    },
+    {
+      "src": "/script.js",
+      "dest": "public/script.js"
+    },
+    {
+      "src": "/favicon.ico",
+      "dest": "public/favicon.ico"
+    },
+    {
+      "src": "/",
+      "dest": "public/index.html"
     },
     {
       "src": "/(.*)",

@@ -1,7 +1,6 @@
 const express = require('express');
 const multer = require('multer');
 const axios = require('axios');
-const path = require('path');
 const cors = require('cors');
 
 const app = express();
@@ -10,9 +9,6 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
-// 静态文件服务
-app.use(express.static(path.join(__dirname, '..')));
 
 // 配置multer用于文件上传
 const storage = multer.memoryStorage();
@@ -118,20 +114,7 @@ app.post('/upload', upload.single('image'), async (req, res) => {
     }
 });
 
-// 首页路由
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, '..', 'index.html'));
-});
-
-// 诊断页面路由
-app.get('/diagnosis.html', (req, res) => {
-    res.sendFile(path.join(__dirname, '..', 'diagnosis.html'));
-});
-
-// 测试页面路由
-app.get('/test.html', (req, res) => {
-    res.sendFile(path.join(__dirname, '..', 'test.html'));
-});
+// API专用路由，静态文件由Vercel直接处理
 
 // 404处理
 app.use((req, res) => {
