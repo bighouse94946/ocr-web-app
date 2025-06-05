@@ -92,54 +92,87 @@ app.post('/upload', upload.single('image'), async (req, res) => {
         console.log('Webhook响应状态:', webhookResponse.status);
         console.log('Webhook响应数据:', webhookResponse.data);
 
-        // 处理n8n响应数据
+        // 处理n8n响应数据 - 解析标准Gemini API格式
         let ocrResult;
         
         console.log('n8n响应详细分析:');
         console.log('- 数据类型:', typeof webhookResponse.data);
-        console.log('- 数据长度:', webhookResponse.data ? webhookResponse.data.length : 'null');
-        console.log('- 响应头:', webhookResponse.headers);
+        console.log('- 数据内容:', JSON.stringify(webhookResponse.data, null, 2));
         
-        if (!webhookResponse.data || webhookResponse.data === '') {
-            // n8n workflow执行成功但返回空数据
-            ocrResult = {
-                text: `[n8n Workflow执行成功 ✅]\n\n所有节点都已正常执行，但"Respond to Webhook"节点返回空数据。\n\n请检查：\n1. "Respond to Webhook"节点是否设置了返回数据\n2. HTTP Request节点是否成功调用了Gemini API\n3. 返回数据的格式是否正确\n\n文件信息：\n- 文件名: ${req.file.originalname}\n- 文件大小: ${(req.file.size / 1024).toFixed(1)} KB\n- 处理状态: workflow完成，等待配置返回数据`,
-                model: 'n8n Workflow (执行成功)',
-                confidence: 1.0,
-                tokenCount: 0
-            };
-        } else if (typeof webhookResponse.data === 'string' && webhookResponse.data.trim()) {
-            // 如果返回非空字符串，可能是OCR文本或JSON字符串
-            let parsedData;
-            try {
-                parsedData = JSON.parse(webhookResponse.data);
+        try {
+            // n8n返回的是完整的Gemini API响应格式
+            const responseData = webhookResponse.data;
+            
+            // 检查是否有candidates数组（标准Gemini API响应格式）
+            if (responseData && responseData.candidates && responseData.candidates[0]) {
+                const candidate = responseData.candidates[0];
+                const content = candidate.content;
+                const usageMetadata = responseData.usageMetadata;
+                
+                // 提取OCR识别文本
+                let extractedText = '';
+                if (content && content.parts && content.parts[0]) {
+                    extractedText = content.parts[0].text || '';
+                }
+                
                 ocrResult = {
-                    text: parsedData.text || parsedData.ocrResult?.text || webhookResponse.data,
-                    model: parsedData.model || 'Google Gemini 2.0 Flash',
-                    confidence: parsedData.confidence || 0.95,
-                    tokenCount: parsedData.tokenCount || webhookResponse.data.length
-                };
-            } catch {
-                // 如果不是JSON，当作纯文本处理
-                ocrResult = {
-                    text: webhookResponse.data,
-                    model: 'Google Gemini 2.0 Flash',
+                    text: extractedText || '识别完成，但未提取到文本内容',
+                    model: 'Google Gemini 2.0 Flash (via n8n)',
                     confidence: 0.95,
-                    tokenCount: webhookResponse.data.length
+                    tokenCount: usageMetadata ? usageMetadata.totalTokenCount : extractedText.length,
+                    finishReason: candidate.finishReason || 'STOP',
+                    promptTokenCount: usageMetadata ? usageMetadata.promptTokenCount : 0,
+                    candidatesTokenCount: usageMetadata ? usageMetadata.candidatesTokenCount : 0
+                };
+                
+                console.log('✅ 成功解析Gemini API响应');
+                console.log('- 识别文本长度:', extractedText.length);
+                console.log('- Token使用量:', ocrResult.tokenCount);
+                
+            } else if (typeof responseData === 'string' && responseData.trim()) {
+                // 如果返回字符串，尝试解析JSON或直接作为文本
+                try {
+                    const parsedData = JSON.parse(responseData);
+                    if (parsedData.candidates) {
+                        // 递归处理JSON字符串中的Gemini响应
+                        const candidate = parsedData.candidates[0];
+                        ocrResult = {
+                            text: candidate.content.parts[0].text || responseData,
+                            model: 'Google Gemini 2.0 Flash',
+                            confidence: 0.95,
+                            tokenCount: parsedData.usageMetadata?.totalTokenCount || responseData.length
+                        };
+                    } else {
+                        ocrResult = {
+                            text: responseData,
+                            model: 'Google Gemini 2.0 Flash',
+                            confidence: 0.95,
+                            tokenCount: responseData.length
+                        };
+                    }
+                } catch {
+                    // 如果不是JSON，当作纯文本处理
+                    ocrResult = {
+                        text: responseData,
+                        model: 'Google Gemini 2.0 Flash',
+                        confidence: 0.95,
+                        tokenCount: responseData.length
+                    };
+                }
+            } else {
+                // 空响应或其他格式
+                ocrResult = {
+                    text: `[调试信息]\n\nn8n Workflow执行成功，但返回数据格式不符合预期。\n\n返回数据类型: ${typeof responseData}\n返回数据内容: ${JSON.stringify(responseData)}\n\n文件信息：\n- 文件名: ${req.file.originalname}\n- 文件大小: ${(req.file.size / 1024).toFixed(1)} KB\n- 处理状态: 等待正确的响应格式`,
+                    model: 'n8n调试模式',
+                    confidence: 0,
+                    tokenCount: 0
                 };
             }
-        } else if (typeof webhookResponse.data === 'object') {
-            // 如果返回对象，直接解析
+        } catch (error) {
+            console.error('❌ 解析n8n响应数据时出错:', error);
             ocrResult = {
-                text: webhookResponse.data.text || webhookResponse.data.ocrResult?.text || '识别完成，但未返回文本内容',
-                model: webhookResponse.data.model || 'Google Gemini 2.0 Flash',
-                confidence: webhookResponse.data.confidence || 0.95,
-                tokenCount: webhookResponse.data.tokenCount || 0
-            };
-        } else {
-            ocrResult = {
-                text: `未知的返回数据格式: ${typeof webhookResponse.data}`,
-                model: 'n8n调试',
+                text: `解析响应数据时出错: ${error.message}\n\n原始数据: ${JSON.stringify(webhookResponse.data)}`,
+                model: 'Error Handler',
                 confidence: 0,
                 tokenCount: 0
             };
