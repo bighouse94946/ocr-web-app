@@ -41,8 +41,8 @@ app.get('/health', (req, res) => {
     res.json(healthResponse);
 });
 
-// OCR上传路由
-app.post('/upload', upload.single('image'), async (req, res) => {
+// OCR上传路由 - 支持多个路径
+app.post(['/upload', '/api/recognize'], upload.single('image'), async (req, res) => {
     console.log('收到OCR请求');
     
     try {
