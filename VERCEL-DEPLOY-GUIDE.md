@@ -26,7 +26,7 @@ https://vercel.com/
 ### 第4步：配置项目设置
 
 ```yaml
-项目名称: ocr-web-app
+项目名称: ocr-web-app-prod (如果ocr-web-app已存在，请使用其他名称)
 Framework Preset: Other
 Root Directory: ./
 Build Command: (留空)
@@ -93,13 +93,19 @@ https://ocr-web-app-xxx.vercel.app
 
 ## 🔧 可能的问题和解决方案
 
-### 问题1: 部署失败
+### 问题1: 项目名称已存在
+**错误**: "Project "ocr-web-appp" already exists, please use a new name"
+**解决方案**: 
+- 将项目名称改为: `ocr-web-app-prod` 或 `ai-ocr-tool` 或 `ocr-app-2024`
+- 或者在Vercel控制台删除同名的旧项目
+
+### 问题2: 部署失败
 **解决方案**: 检查vercel.json配置，确保所有API文件都在api/目录下
 
-### 问题2: 上传功能报错
+### 问题3: 上传功能报错
 **解决方案**: 检查网络连接，确保n8n webhook可以访问
 
-### 问题3: OCR识别失败
+### 问题4: OCR识别失败
 **解决方案**: 检查n8n工作流状态和webhook配置
 
 ## 📞 部署成功确认
