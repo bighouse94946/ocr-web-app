@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>测试V1适配版本</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+        .upload-area {
+            border: 2px dashed #667eea;
+            border-radius: 10px;
+            padding: 40px 20px;
+            text-align: center;
+            cursor: pointer;
+            margin: 20px 0;
+            background: rgba(102, 126, 234, 0.05);
+        }
+        .upload-area:hover {
+            background: rgba(102, 126, 234, 0.1);
+        }
+        .upload-area.dragover {
+            background: rgba(102, 126, 234, 0.2);
+            border-color: #5a67d8;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border-left: 4px solid #28a745;
+        }
+        .error {
+            margin-top: 20px;
+            padding: 20px;
+            background: #f8d7da;
+            border-radius: 10px;
+            border-left: 4px solid #dc3545;
+            color: #721c24;
+        }
+        .loading {
+            text-align: center;
+            margin: 20px 0;
+        }
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:hover {
+            opacity: 0.9;
+        }
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .info-grid {
+            display: grid;
+            grid-template-columns: auto 1fr;
+            gap: 10px;
+            margin: 15px 0;
+            font-size: 14px;
+        }
+        .info-label {
+            font-weight: bold;
+            color: #555;
+        }
+        pre {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            border: 1px solid #e9ecef;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 V1适配版本测试</h1>
+        <p>基于第一个版本适配Vercel的OCR服务测试</p>
+        
+        <div class="upload-area" id="uploadArea">
+            <div style="font-size: 48px; margin-bottom: 10px;">📁</div>
+            <p>点击选择图片或拖拽图片到此处</p>
+            <p style="color: #666; font-size: 14px;">支持 JPG、PNG、GIF 格式，最大 10MB</p>
+            <input type="file" id="fileInput" accept="image/*" style="display: none;">
+        </div>
+
+        <div style="text-align: center;">
+            <button onclick="testHealthCheck()">健康检查</button>
+            <button onclick="testLocalServer()">测试本地服务器</button>
+            <button onclick="testVercelDeploy()">测试Vercel部署</button>
+        </div>
+
+        <div id="result"></div>
+    </div>
+
+    <script>
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const resultDiv = document.getElementById('result');
+
+        // 上传区域点击
+        uploadArea.addEventListener('click', () => {
+            fileInput.click();
+        });
+
+        // 拖拽功能
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFile(files[0]);
+            }
+        });
+
+        // 文件选择
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFile(e.target.files[0]);
+            }
+        });
+
+        async function handleFile(file) {
+            if (!file.type.startsWith('image/')) {
+                showError('请选择图片文件');
+                return;
+            }
+
+            showLoading('正在上传和处理图片...');
+
+            const formData = new FormData();
+            formData.append('image', file);
+
+            try {
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showResult(data);
+                } else {
+                    showError(data.error || '处理失败');
+                }
+            } catch (error) {
+                showError('网络错误: ' + error.message);
+            }
+        }
+
+        async function testHealthCheck() {
+            showLoading('检查服务健康状态...');
+            try {
+                const response = await fetch('/health');
+                const data = await response.json();
+                showResult({
+                    type: 'health_check',
+                    status: response.status,
+                    data: data
+                });
+            } catch (error) {
+                showError('健康检查失败: ' + error.message);
+            }
+        }
+
+        async function testLocalServer() {
+            showLoading('测试本地服务器连接...');
+            try {
+                const response = await fetch('http://localhost:3000/health');
+                const data = await response.json();
+                showResult({
+                    type: 'local_server',
+                    status: response.status,
+                    data: data
+                });
+            } catch (error) {
+                showError('本地服务器连接失败: ' + error.message);
+            }
+        }
+
+        async function testVercelDeploy() {
+            showLoading('测试Vercel部署连接...');
+            try {
+                const response = await fetch('https://ocr.bighouse94946.fun/health');
+                const data = await response.json();
+                showResult({
+                    type: 'vercel_deploy',
+                    status: response.status,
+                    data: data
+                });
+            } catch (error) {
+                showError('Vercel部署连接失败: ' + error.message);
+            }
+        }
+
+        function showLoading(message) {
+            resultDiv.innerHTML = `
+                <div class="loading">
+                    <div style="font-size: 24px; margin-bottom: 10px;">⏳</div>
+                    <p>${message}</p>
+                </div>
+            `;
+        }
+
+        function showResult(data) {
+            let content = '';
+
+            if (data.type === 'health_check' || data.type === 'local_server' || data.type === 'vercel_deploy') {
+                content = `
+                    <h3>✅ ${data.type === 'health_check' ? '健康检查' : data.type === 'local_server' ? '本地服务器' : 'Vercel部署'}结果</h3>
+                    <div class="info-grid">
+                        <span class="info-label">状态码:</span>
+                        <span>${data.status}</span>
+                        <span class="info-label">响应数据:</span>
+                        <span></span>
+                    </div>
+                    <pre>${JSON.stringify(data.data, null, 2)}</pre>
+                `;
+            } else if (data.success && data.ocrResult) {
+                content = `
+                    <h3>🎯 OCR识别成功</h3>
+                    <div class="info-grid">
+                        <span class="info-label">文件名:</span>
+                        <span>${data.originalName}</span>
+                        <span class="info-label">模型:</span>
+                        <span>${data.ocrResult.model || '未知'}</span>
+                        <span class="info-label">置信度:</span>
+                        <span>${(data.ocrResult.confidence * 100).toFixed(1)}%</span>
+                        <span class="info-label">语言:</span>
+                        <span>${data.ocrResult.language}</span>
+                        <span class="info-label">Token数:</span>
+                        <span>${data.ocrResult.tokenCount || 0}</span>
+                        <span class="info-label">状态:</span>
+                        <span>${data.ocrResult.webhookStatus}</span>
+                    </div>
+                    <h4>识别文本:</h4>
+                    <pre>${data.ocrResult.text}</pre>
+                `;
+            } else {
+                content = `
+                    <h3>📋 响应数据</h3>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                `;
+            }
+
+            resultDiv.innerHTML = `<div class="result">${content}</div>`;
+        }
+
+        function showError(message) {
+            resultDiv.innerHTML = `
+                <div class="error">
+                    <h3>❌ 错误</h3>
+                    <p>${message}</p>
+                </div>
+            `;
+        }
+    </script>
+</body>
+</html> 

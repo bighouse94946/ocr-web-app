@@ -54,6 +54,17 @@ const upload = multer({
     }
 });
 
+// 健康检查端点
+app.get('/health', (req, res) => {
+    res.json({
+        status: 'ok',
+        message: 'OCR服务运行正常',
+        timestamp: new Date().toISOString(),
+        env: 'local-original',
+        port: PORT
+    });
+});
+
 // 主页路由
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
@@ -87,9 +98,9 @@ app.post('/upload', upload.single('image'), async (req, res) => {
         console.log('图片URL:', imageUrl);
         console.log('图片本地路径:', imagePath);
         
-        // 调用OCR webhook
+        // 调用OCR webhook - 使用用户提供的n8n webhook
         const webhookUrl = process.env.OCR_WEBHOOK_URL || 'https://n8n.bighouse94946.fun/webhook/56fa0dd0-c4ce-4a3a-b5e3-53e7469547e6';
-        console.log('Webhook URL:', webhookUrl);
+        console.log('使用webhook URL:', webhookUrl);
         
         let ocrResult;
         if (webhookUrl && !webhookUrl.includes('模拟')) {
