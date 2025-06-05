@@ -4,7 +4,7 @@ async function testWebhook() {
     console.log('🔍 开始测试Webhook...');
     
     try {
-        const webhookUrl = 'https://hook.us2.make.com/4w7qxe6tgxvncjhgpnm5fj1pbt8rmlnr';
+        const webhookUrl = 'https://n8n.bighouse94946.fun/webhook/56fa0dd0-c4ce-4a3a-b5e3-53e7469547e6';
         
         // 创建一个小的测试图片（1x1像素的PNG base64）
         const testImage = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==';

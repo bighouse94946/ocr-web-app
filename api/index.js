@@ -64,31 +64,28 @@ app.post('/upload', upload.single('image'), async (req, res) => {
         const base64Image = req.file.buffer.toString('base64');
         const mimeType = req.file.mimetype;
 
-        // 临时使用模拟OCR响应，避免Webhook超时问题
-        console.log('使用模拟OCR响应以确保系统稳定性');
+        // 调用n8n Webhook进行真实OCR处理
+        const webhookUrl = 'https://n8n.bighouse94946.fun/webhook/56fa0dd0-c4ce-4a3a-b5e3-53e7469547e6';
         
-        // 模拟处理时间（1-2秒）
-        await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 1000));
+        console.log('调用n8n Webhook...');
         
-        // 创建模拟响应
-        const mockResponse = {
-            data: {
-                success: true,
-                ocrResult: {
-                    text: `这是模拟识别结果\n文件名: ${req.file.originalname}\n文件大小: ${(req.file.size / 1024).toFixed(1)} KB\n\n[注意：这是测试响应，实际OCR功能正在优化中]`,
-                    model: 'Gemini 2.0 Flash (模拟)',
-                    confidence: 0.95,
-                    tokenCount: 150
-                }
+        const webhookResponse = await axios.post(webhookUrl, {
+            image: `data:${mimeType};base64,${base64Image}`,
+            filename: req.file.originalname
+        }, {
+            timeout: 8000, // 8秒超时，给OCR处理充足时间
+            headers: {
+                'Content-Type': 'application/json'
             }
-        };
+        });
 
-        console.log('模拟OCR响应已生成');
+        console.log('Webhook响应状态:', webhookResponse.status);
+        console.log('Webhook响应数据:', webhookResponse.data);
 
         // 返回成功响应
         res.json({
             success: true,
-            data: mockResponse.data,
+            data: webhookResponse.data,
             filename: req.file.originalname,
             filesize: req.file.size
         });
