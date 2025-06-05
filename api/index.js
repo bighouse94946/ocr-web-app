@@ -82,10 +82,36 @@ app.post('/upload', upload.single('image'), async (req, res) => {
         console.log('Webhook响应状态:', webhookResponse.status);
         console.log('Webhook响应数据:', webhookResponse.data);
 
+        // 处理n8n响应数据
+        let ocrResult;
+        
+        if (!webhookResponse.data || webhookResponse.data === '') {
+            // n8n返回空数据，提供提示信息
+            ocrResult = {
+                text: `[n8n Webhook配置提示]\n\n检测到n8n workflow返回空响应。\n请确保您的n8n workflow包含：\n\n1. Webhook接收节点\n2. Google Gemini OCR节点\n3. 返回结果节点\n\n文件信息：\n- 文件名: ${req.file.originalname}\n- 文件大小: ${(req.file.size / 1024).toFixed(1)} KB\n- 处理时间: 正常`,
+                model: 'n8n Workflow (需要配置)',
+                confidence: 0,
+                tokenCount: 0
+            };
+        } else if (typeof webhookResponse.data === 'string') {
+            // 如果返回字符串，假设是OCR文本
+            ocrResult = {
+                text: webhookResponse.data,
+                model: 'n8n + Gemini',
+                confidence: 0.9,
+                tokenCount: webhookResponse.data.length
+            };
+        } else {
+            // 如果返回对象，尝试解析
+            ocrResult = webhookResponse.data.ocrResult || webhookResponse.data;
+        }
+
         // 返回成功响应
         res.json({
             success: true,
-            data: webhookResponse.data,
+            data: {
+                ocrResult: ocrResult
+            },
             filename: req.file.originalname,
             filesize: req.file.size
         });
