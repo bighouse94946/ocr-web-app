@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OCR 图片识别</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📷 OCR 图片识别</h1>
+            <p>上传图片，智能识别文字内容</p>
+        </header>
+
+        <main>
+            <!-- 第一步：文件上传 -->
+            <div class="upload-section">
+                <h2>📤 第一步：选择图片</h2>
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-icon">📁</div>
+                    <p>点击选择图片或拖拽图片到此处</p>
+                    <p class="upload-hint">支持 JPG、PNG、GIF 格式，最大 10MB</p>
+                    <input type="file" id="fileInput" accept="image/*" hidden>
+                </div>
+            </div>
+
+            <!-- 第二步：图片预览和识别 -->
+            <div class="preview-section" id="previewSection" style="display: none;">
+                <h2>🖼️ 第二步：确认图片并开始识别</h2>
+                <div class="image-preview">
+                    <img id="previewImage" src="" alt="上传的图片预览">
+                    <div class="image-info">
+                        <span id="imageName"></span>
+                        <span id="imageSize"></span>
+                    </div>
+                </div>
+                <div class="action-buttons">
+                    <button id="recognizeBtn" class="recognize-btn">
+                        <span class="btn-icon">🔍</span>
+                        <span class="btn-text">开始识别</span>
+                    </button>
+                    <button id="resetBtn" class="reset-btn">
+                        <span class="btn-icon">🔄</span>
+                        <span class="btn-text">重新选择</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 第三步：识别进度 -->
+            <div class="loading-section" id="loadingSection" style="display: none;">
+                <h2>⚡ 正在识别中...</h2>
+                <div class="loading-container">
+                    <div class="loading-spinner"></div>
+                    <p id="loadingText">正在处理图片，请稍候...</p>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 第四步：识别结果 -->
+            <div class="result-section" id="resultSection" style="display: none;">
+                <h2>✨ 识别结果</h2>
+                <div class="result-container">
+                    <div class="result-info">
+                        <div class="info-item">
+                            <span class="info-label">识别模型：</span>
+                            <span id="resultModel">-</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">置信度：</span>
+                            <span id="resultConfidence">-</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Token使用：</span>
+                            <span id="resultTokens">-</span>
+                        </div>
+                    </div>
+                    <div class="result-text-container">
+                        <div class="result-header">
+                            <h3>📝 识别文本</h3>
+                            <button id="copyBtn" class="copy-btn">
+                                <span class="btn-icon">📋</span>
+                                <span class="btn-text">复制文本</span>
+                            </button>
+                        </div>
+                        <div class="result-text" id="resultText"></div>
+                    </div>
+                    <div class="result-actions">
+                        <button id="newRecognitionBtn" class="new-recognition-btn">
+                            <span class="btn-icon">🆕</span>
+                            <span class="btn-text">识别新图片</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 错误提示 -->
+            <div class="error-section" id="errorSection" style="display: none;">
+                <h2>❌ 处理失败</h2>
+                <div class="error-container">
+                    <p id="errorMessage"></p>
+                    <button id="retryBtn" class="retry-btn">
+                        <span class="btn-icon">🔄</span>
+                        <span class="btn-text">重新尝试</span>
+                    </button>
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <p>使用 Google Gemini 2.0 Flash 模型提供 OCR 识别服务</p>
+        </footer>
+    </div>
+
+    <!-- 图片预览弹窗 -->
+    <div class="image-preview-modal" id="imagePreviewModal" style="display: none;">
+        <div class="modal-overlay" id="modalOverlay"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="previewModalTitle">图片预览</h3>
+                <div class="modal-controls">
+                    <button class="modal-btn zoom-out-btn" id="zoomOutBtn" title="缩小">
+                        <span>🔍-</span>
+                    </button>
+                    <span class="zoom-level" id="zoomLevel">100%</span>
+                    <button class="modal-btn zoom-in-btn" id="zoomInBtn" title="放大">
+                        <span>🔍+</span>
+                    </button>
+                    <button class="modal-btn reset-zoom-btn" id="resetZoomBtn" title="重置缩放">
+                        <span>🔄</span>
+                    </button>
+                    <button class="modal-btn close-btn" id="closeModalBtn" title="关闭">
+                        <span>✕</span>
+                    </button>
+                </div>
+            </div>
+            <div class="modal-body">
+                <div class="image-container" id="imageContainer">
+                    <img id="previewModalImage" src="" alt="预览图片">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <div class="image-info-modal">
+                    <span id="modalImageName">文件名</span>
+                    <span id="modalImageSize">文件大小</span>
+                    <span id="modalImageDimensions">图片尺寸</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html> 
