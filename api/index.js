@@ -83,7 +83,7 @@ app.post('/upload', upload.single('image'), async (req, res) => {
         });
         
         const webhookResponse = await axios.post(webhookUrl, formData, {
-            timeout: 8000, // 8秒超时，给OCR处理充足时间
+            timeout: 25000, // 增加到25秒，给n8n OCR处理充足时间
             headers: {
                 ...formData.getHeaders()
             }

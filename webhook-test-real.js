@@ -27,7 +27,7 @@ async function testRealImage() {
         });
         
         const response = await axios.post(webhookUrl, formData, {
-            timeout: 15000,
+            timeout: 30000, // 30秒超时，测试n8n OCR处理
             headers: {
                 ...formData.getHeaders()
             }
