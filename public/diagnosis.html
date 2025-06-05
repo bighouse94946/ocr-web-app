@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OCR 服务器诊断</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 900px;
+            margin: 20px auto;
+            padding: 20px;
+            line-height: 1.6;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            border-bottom: 3px solid #007bff;
+            padding-bottom: 10px;
+        }
+        .diagnostic-section {
+            background: #f8f9fa;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            border-left: 4px solid #007bff;
+        }
+        .status {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+        .status.success { background: #d4edda; color: #155724; }
+        .status.error { background: #f8d7da; color: #721c24; }
+        .status.warning { background: #fff3cd; color: #856404; }
+        .status.info { background: #d1ecf1; color: #0c5460; }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #0056b3; }
+        button.danger { background: #dc3545; }
+        button.danger:hover { background: #c82333; }
+        .result {
+            background: #e9ecef;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .info-card {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+        }
+        .progress {
+            background: #e9ecef;
+            border-radius: 10px;
+            height: 20px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        .progress-bar {
+            background: #007bff;
+            height: 100%;
+            transition: width 0.3s ease;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 OCR 服务器诊断工具</h1>
+        
+        <div class="diagnostic-section">
+            <h3>📊 环境信息</h3>
+            <div class="info-grid">
+                <div class="info-card">
+                    <strong>当前域名:</strong><br>
+                    <span id="currentDomain"></span>
+                </div>
+                <div class="info-card">
+                    <strong>协议:</strong><br>
+                    <span id="currentProtocol"></span>
+                </div>
+                <div class="info-card">
+                    <strong>用户代理:</strong><br>
+                    <span id="userAgent"></span>
+                </div>
+                <div class="info-card">
+                    <strong>当前时间:</strong><br>
+                    <span id="currentTime"></span>
+                </div>
+            </div>
+        </div>
+
+        <div class="diagnostic-section">
+            <h3>🔗 连接测试 <span id="connectionStatus" class="status info">等待测试</span></h3>
+            <button onclick="runConnectionTests()">开始连接测试</button>
+            <button onclick="clearResults()">清除结果</button>
+            
+            <div class="progress" style="display: none;" id="testProgress">
+                <div class="progress-bar" id="progressBar"></div>
+            </div>
+            
+            <div id="connectionResults" class="result"></div>
+        </div>
+
+        <div class="diagnostic-section">
+            <h3>💚 健康检查 <span id="healthStatus" class="status info">未测试</span></h3>
+            <button onclick="testHealth()">测试健康检查</button>
+            <div id="healthResult" class="result"></div>
+        </div>
+
+        <div class="diagnostic-section">
+            <h3>📤 上传功能测试 <span id="uploadStatus" class="status info">未测试</span></h3>
+            <input type="file" id="testFile" accept="image/*">
+            <button onclick="testUpload()">测试上传接口</button>
+            <button onclick="testFakeUpload()">测试空上传</button>
+            <div id="uploadResult" class="result"></div>
+        </div>
+
+        <div class="diagnostic-section">
+            <h3>📋 完整诊断报告</h3>
+            <button onclick="generateFullReport()">生成完整报告</button>
+            <button onclick="downloadReport()" class="danger">下载报告</button>
+            <div id="fullReport" class="result"></div>
+        </div>
+    </div>
+
+    <script>
+        let testResults = {};
+        
+        // 初始化环境信息
+        function initEnvironmentInfo() {
+            document.getElementById('currentDomain').textContent = window.location.host;
+            document.getElementById('currentProtocol').textContent = window.location.protocol;
+            document.getElementById('userAgent').textContent = navigator.userAgent.substring(0, 50) + '...';
+            document.getElementById('currentTime').textContent = new Date().toLocaleString();
+        }
+
+        // 更新状态
+        function updateStatus(elementId, status, text) {
+            const element = document.getElementById(elementId);
+            element.className = `status ${status}`;
+            element.textContent = text;
+        }
+
+        // 显示进度
+        function showProgress(show) {
+            const progress = document.getElementById('testProgress');
+            const bar = document.getElementById('progressBar');
+            progress.style.display = show ? 'block' : 'none';
+            if (!show) bar.style.width = '0%';
+        }
+
+        // 更新进度
+        function updateProgress(percent) {
+            document.getElementById('progressBar').style.width = percent + '%';
+        }
+
+        // 连接测试
+        async function runConnectionTests() {
+            updateStatus('connectionStatus', 'info', '测试中...');
+            showProgress(true);
+            
+            const resultDiv = document.getElementById('connectionResults');
+            resultDiv.textContent = '开始连接测试...\n';
+            
+            const tests = [
+                { name: '基础连接', url: '/', method: 'GET' },
+                { name: '健康检查', url: '/health', method: 'GET' },
+                { name: '上传接口', url: '/upload', method: 'POST' },
+                { name: '不存在的路径', url: '/nonexistent', method: 'GET' }
+            ];
+            
+            for (let i = 0; i < tests.length; i++) {
+                const test = tests[i];
+                updateProgress((i / tests.length) * 100);
+                
+                try {
+                    const startTime = Date.now();
+                    const response = await fetch(test.url, { method: test.method });
+                    const endTime = Date.now();
+                    const responseTime = endTime - startTime;
+                    
+                    resultDiv.textContent += `✓ ${test.name}: ${response.status} (${responseTime}ms)\n`;
+                    testResults[test.name] = { status: response.status, time: responseTime, success: true };
+                } catch (error) {
+                    resultDiv.textContent += `✗ ${test.name}: 连接失败 - ${error.message}\n`;
+                    testResults[test.name] = { error: error.message, success: false };
+                }
+            }
+            
+            updateProgress(100);
+            setTimeout(() => showProgress(false), 1000);
+            updateStatus('connectionStatus', 'success', '测试完成');
+        }
+
+        // 健康检查测试
+        async function testHealth() {
+            updateStatus('healthStatus', 'info', '测试中...');
+            const resultDiv = document.getElementById('healthResult');
+            
+            try {
+                const startTime = Date.now();
+                const response = await fetch('/health');
+                const endTime = Date.now();
+                const data = await response.json();
+                
+                resultDiv.textContent = `状态码: ${response.status}\n响应时间: ${endTime - startTime}ms\n\n响应数据:\n${JSON.stringify(data, null, 2)}`;
+                
+                if (response.ok) {
+                    updateStatus('healthStatus', 'success', '正常');
+                    testResults.health = { success: true, data: data, time: endTime - startTime };
+                } else {
+                    updateStatus('healthStatus', 'error', '异常');
+                    testResults.health = { success: false, status: response.status };
+                }
+            } catch (error) {
+                resultDiv.textContent = `连接错误: ${error.message}`;
+                updateStatus('healthStatus', 'error', '失败');
+                testResults.health = { success: false, error: error.message };
+            }
+        }
+
+        // 上传测试
+        async function testUpload() {
+            const fileInput = document.getElementById('testFile');
+            const resultDiv = document.getElementById('uploadResult');
+            
+            if (!fileInput.files[0]) {
+                resultDiv.textContent = '请先选择一个图片文件';
+                return;
+            }
+            
+            updateStatus('uploadStatus', 'info', '测试中...');
+            
+            try {
+                const formData = new FormData();
+                formData.append('image', fileInput.files[0]);
+                
+                const startTime = Date.now();
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                const endTime = Date.now();
+                
+                const data = await response.json();
+                
+                resultDiv.textContent = `状态码: ${response.status}\n响应时间: ${endTime - startTime}ms\n\n响应数据:\n${JSON.stringify(data, null, 2)}`;
+                
+                if (response.ok) {
+                    updateStatus('uploadStatus', 'success', '正常');
+                    testResults.upload = { success: true, data: data, time: endTime - startTime };
+                } else {
+                    updateStatus('uploadStatus', 'error', '异常');
+                    testResults.upload = { success: false, status: response.status, data: data };
+                }
+            } catch (error) {
+                resultDiv.textContent = `上传错误: ${error.message}`;
+                updateStatus('uploadStatus', 'error', '失败');
+                testResults.upload = { success: false, error: error.message };
+            }
+        }
+
+        // 测试空上传
+        async function testFakeUpload() {
+            updateStatus('uploadStatus', 'info', '测试中...');
+            const resultDiv = document.getElementById('uploadResult');
+            
+            try {
+                const response = await fetch('/upload', { method: 'POST' });
+                const data = await response.json();
+                
+                resultDiv.textContent = `空上传测试:\n状态码: ${response.status}\n响应: ${JSON.stringify(data, null, 2)}`;
+            } catch (error) {
+                resultDiv.textContent = `空上传测试错误: ${error.message}`;
+            }
+        }
+
+        // 生成完整报告
+        function generateFullReport() {
+            const report = {
+                timestamp: new Date().toISOString(),
+                environment: {
+                    domain: window.location.host,
+                    protocol: window.location.protocol,
+                    userAgent: navigator.userAgent
+                },
+                testResults: testResults,
+                summary: {
+                    totalTests: Object.keys(testResults).length,
+                    successfulTests: Object.values(testResults).filter(r => r.success).length,
+                    failedTests: Object.values(testResults).filter(r => !r.success).length
+                }
+            };
+            
+            document.getElementById('fullReport').textContent = JSON.stringify(report, null, 2);
+        }
+
+        // 下载报告
+        function downloadReport() {
+            const reportText = document.getElementById('fullReport').textContent;
+            if (!reportText) {
+                alert('请先生成报告');
+                return;
+            }
+            
+            const blob = new Blob([reportText], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `ocr-diagnosis-${new Date().toISOString().slice(0, 19)}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        // 清除结果
+        function clearResults() {
+            document.getElementById('connectionResults').textContent = '';
+            testResults = {};
+            updateStatus('connectionStatus', 'info', '等待测试');
+        }
+
+        // 初始化
+        initEnvironmentInfo();
+        
+        // 自动刷新时间
+        setInterval(() => {
+            document.getElementById('currentTime').textContent = new Date().toLocaleString();
+        }, 1000);
+    </script>
+</body>
+</html> 
