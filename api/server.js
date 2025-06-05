@@ -65,8 +65,9 @@ app.post('/upload', upload.single('image'), async (req, res) => {
         console.log('图片上传成功:', req.file.originalname);
         console.log('图片大小:', req.file.size);
         
-        // 调用OCR webhook
+        // 调用OCR webhook - 使用用户提供的n8n webhook
         const webhookUrl = process.env.OCR_WEBHOOK_URL || 'https://n8n.bighouse94946.fun/webhook/56fa0dd0-c4ce-4a3a-b5e3-53e7469547e6';
+        console.log('使用webhook URL:', webhookUrl);
         
         let ocrResult;
         if (webhookUrl && webhookUrl !== 'demo') {
