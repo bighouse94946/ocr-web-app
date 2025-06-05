@@ -19,6 +19,15 @@ if (!fs.existsSync(uploadsDir)) {
     fs.mkdirSync(uploadsDir);
 }
 
+// 提供uploads目录的静态文件服务
+app.use('/uploads', express.static('uploads'));
+
+// 添加调试中间件
+app.use((req, res, next) => {
+    console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
+    next();
+});
+
 // 配置multer用于文件上传
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
@@ -50,10 +59,24 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
+// 健康检查路由
+app.get('/health', (req, res) => {
+    res.json({ 
+        status: 'ok', 
+        timestamp: new Date().toISOString(),
+        env: process.env.NODE_ENV || 'development'
+    });
+});
+
 // 文件上传和OCR处理路由
 app.post('/upload', upload.single('image'), async (req, res) => {
+    console.log('收到上传请求');
+    console.log('请求头:', req.headers);
+    console.log('文件信息:', req.file);
+    
     try {
         if (!req.file) {
+            console.log('没有接收到文件');
             return res.status(400).json({ error: '请选择要上传的图片文件' });
         }
 
@@ -69,7 +92,7 @@ app.post('/upload', upload.single('image'), async (req, res) => {
         console.log('Webhook URL:', webhookUrl);
         
         let ocrResult;
-        if (webhookUrl) {
+        if (webhookUrl && !webhookUrl.includes('模拟')) {
             try {
                 console.log('正在调用webhook...');
                 
@@ -248,21 +271,25 @@ app.post('/upload', upload.single('image'), async (req, res) => {
     }
 });
 
-// 提供上传的图片访问
-app.use('/uploads', express.static('uploads'));
-
 // 错误处理中间件
 app.use((error, req, res, next) => {
+    console.error('应用错误:', error);
     if (error instanceof multer.MulterError) {
         if (error.code === 'LIMIT_FILE_SIZE') {
-            return res.status(400).json({ error: '文件大小超过限制（最大10MB）' });
+            return res.status(400).json({ error: '文件大小超过10MB限制' });
         }
     }
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: '服务器内部错误' });
+});
+
+// 404处理
+app.use((req, res) => {
+    console.log('404 - 未找到路由:', req.url);
+    res.status(404).json({ error: '请求的资源未找到' });
 });
 
 // 启动服务器
 app.listen(PORT, () => {
     console.log(`OCR Web应用已启动，访问地址: http://localhost:${PORT}`);
-    console.log(`环境变量 OCR_WEBHOOK_URL: ${process.env.OCR_WEBHOOK_URL || '未设置（使用模拟数据）'}`);
+    console.log(`环境变量 OCR_WEBHOOK_URL: ${process.env.OCR_WEBHOOK_URL || '未设置（使用默认webhook）'}`);
 }); 
