@@ -68,11 +68,13 @@ app.post('/upload', upload.single('image'), async (req, res) => {
         const webhookUrl = 'https://hook.us2.make.com/4w7qxe6tgxvncjhgpnm5fj1pbt8rmlnr';
         
         console.log('调用Webhook...');
+        
+        // 减少超时时间适应Vercel限制
         const webhookResponse = await axios.post(webhookUrl, {
             image: `data:${mimeType};base64,${base64Image}`,
             filename: req.file.originalname
         }, {
-            timeout: 30000,
+            timeout: 8000, // 减少到8秒，为Vercel留出处理时间
             headers: {
                 'Content-Type': 'application/json'
             }
@@ -95,19 +97,19 @@ app.post('/upload', upload.single('image'), async (req, res) => {
         if (error.code === 'ECONNABORTED') {
             res.status(408).json({
                 success: false,
-                error: '请求超时，请重试'
+                error: '处理超时，请尝试压缩图片后重试'
             });
         } else if (error.response) {
             console.error('Webhook错误响应:', error.response.data);
             res.status(error.response.status).json({
                 success: false,
-                error: `Webhook错误: ${error.response.status}`,
+                error: `识别服务错误: ${error.response.status}`,
                 details: error.response.data
             });
         } else {
             res.status(500).json({
                 success: false,
-                error: '服务器内部错误',
+                error: '服务器内部错误，请稍后重试',
                 details: error.message
             });
         }
