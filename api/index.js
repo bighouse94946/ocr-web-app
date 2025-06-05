@@ -15,7 +15,7 @@ const storage = multer.memoryStorage();
 const upload = multer({
     storage: storage,
     limits: {
-        fileSize: 10 * 1024 * 1024 // 10MB限制
+        fileSize: 2 * 1024 * 1024 // 减少到2MB限制，确保快速处理
     },
     fileFilter: (req, file, cb) => {
         const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
@@ -69,12 +69,12 @@ app.post('/upload', upload.single('image'), async (req, res) => {
         
         console.log('调用Webhook...');
         
-        // 减少超时时间适应Vercel限制
+        // 进一步减少超时时间，确保在Vercel限制内
         const webhookResponse = await axios.post(webhookUrl, {
             image: `data:${mimeType};base64,${base64Image}`,
             filename: req.file.originalname
         }, {
-            timeout: 8000, // 减少到8秒，为Vercel留出处理时间
+            timeout: 5000, // 减少到5秒，确保能在Vercel限制内完成
             headers: {
                 'Content-Type': 'application/json'
             }
@@ -97,7 +97,7 @@ app.post('/upload', upload.single('image'), async (req, res) => {
         if (error.code === 'ECONNABORTED') {
             res.status(408).json({
                 success: false,
-                error: '处理超时，请尝试压缩图片后重试'
+                error: '处理超时，请使用2MB以下的图片重试'
             });
         } else if (error.response) {
             console.error('Webhook错误响应:', error.response.data);

@@ -121,9 +121,9 @@ function validateFile(file) {
         return false;
     }
 
-    // 检查文件大小（10MB）
-    if (file.size > 10 * 1024 * 1024) {
-        showError('文件大小不能超过 10MB');
+    // 检查文件大小（2MB）- 减小限制确保快速处理
+    if (file.size > 2 * 1024 * 1024) {
+        showError('文件大小不能超过 2MB，请压缩图片后重试');
         return false;
     }
 
