@@ -1,0 +1,38 @@
+const fs = require('fs');
+
+// 创建一个简单的SVG图片，包含清晰的文字
+const svgContent = `<?xml version="1.0" encoding="UTF-8"?>
+<svg width="400" height="200" xmlns="http://www.w3.org/2000/svg">
+  <rect width="100%" height="100%" fill="white"/>
+  <text x="200" y="50" font-family="Arial, sans-serif" font-size="24" fill="black" text-anchor="middle">
+    测试OCR识别
+  </text>
+  <text x="200" y="80" font-family="Arial, sans-serif" font-size="18" fill="black" text-anchor="middle">
+    Test OCR Recognition
+  </text>
+  <text x="200" y="110" font-family="Arial, sans-serif" font-size="16" fill="black" text-anchor="middle">
+    电话: 123-456-7890
+  </text>
+  <text x="200" y="140" font-family="Arial, sans-serif" font-size="16" fill="black" text-anchor="middle">
+    邮箱: test@example.com
+  </text>
+  <text x="200" y="170" font-family="Arial, sans-serif" font-size="14" fill="black" text-anchor="middle">
+    地址: 北京市朝阳区测试路123号
+  </text>
+</svg>`;
+
+// 将SVG保存为文件
+fs.writeFileSync('test-with-text.svg', svgContent);
+console.log('✅ 创建测试SVG图片成功: test-with-text.svg');
+
+// 创建一个简单的base64编码的PNG图片（包含文字）
+const textImageBase64 = `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`;
+
+const textImageBuffer = Buffer.from(textImageBase64, 'base64');
+fs.writeFileSync('test-with-real-text.png', textImageBuffer);
+console.log('✅ 创建包含文字的PNG图片成功: test-with-real-text.png');
+
+console.log('\n可用的测试图片:');
+console.log('1. test-with-text.svg - SVG格式，包含中英文文字');
+console.log('2. test-with-real-text.png - PNG格式，包含简单文字');
+console.log('\n使用这些图片进行OCR测试，应该能够获得非空的识别结果。'); 

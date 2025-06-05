@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="400" height="200" xmlns="http://www.w3.org/2000/svg">
+  <rect width="100%" height="100%" fill="white"/>
+  <text x="200" y="50" font-family="Arial, sans-serif" font-size="24" fill="black" text-anchor="middle">
+    测试OCR识别
+  </text>
+  <text x="200" y="80" font-family="Arial, sans-serif" font-size="18" fill="black" text-anchor="middle">
+    Test OCR Recognition
+  </text>
+  <text x="200" y="110" font-family="Arial, sans-serif" font-size="16" fill="black" text-anchor="middle">
+    电话: 123-456-7890
+  </text>
+  <text x="200" y="140" font-family="Arial, sans-serif" font-size="16" fill="black" text-anchor="middle">
+    邮箱: test@example.com
+  </text>
+  <text x="200" y="170" font-family="Arial, sans-serif" font-size="14" fill="black" text-anchor="middle">
+    地址: 北京市朝阳区测试路123号
+  </text>
+</svg>
