@@ -2,26 +2,30 @@
   "version": 2,
   "builds": [
     {
-      "src": "server.js",
+      "src": "api/index.js",
       "use": "@vercel/node"
     }
   ],
   "routes": [
     {
       "src": "/health",
-      "dest": "server.js"
+      "dest": "api/index.js"
     },
     {
       "src": "/upload",
-      "dest": "server.js"
+      "dest": "api/index.js"
     },
     {
-      "src": "/api/(.*)",
-      "dest": "server.js"
+      "src": "/diagnosis.html",
+      "dest": "api/index.js"
+    },
+    {
+      "src": "/test.html", 
+      "dest": "api/index.js"
     },
     {
       "src": "/(.*)",
-      "dest": "server.js"
+      "dest": "api/index.js"
     }
   ]
 } 
