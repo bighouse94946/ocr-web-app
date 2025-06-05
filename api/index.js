@@ -69,9 +69,12 @@ app.post('/upload', upload.single('image'), async (req, res) => {
         
         console.log('调用n8n Webhook...');
         
+        // 为n8n Extract from File节点准备正确的数据格式
         const webhookResponse = await axios.post(webhookUrl, {
-            image: `data:${mimeType};base64,${base64Image}`,
-            filename: req.file.originalname
+            data: base64Image,  // 直接发送base64数据，不带data:mime前缀
+            filename: req.file.originalname,
+            mimeType: mimeType,
+            originalData: `data:${mimeType};base64,${base64Image}` // 备用完整格式
         }, {
             timeout: 8000, // 8秒超时，给OCR处理充足时间
             headers: {

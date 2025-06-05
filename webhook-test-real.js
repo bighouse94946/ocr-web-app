@@ -13,9 +13,14 @@ async function testRealImage() {
         console.log('📤 发送真实图片测试...');
         const startTime = Date.now();
         
+        // 匹配n8n Extract from File节点的期望格式
+        const testImageBase64 = testImage.replace('data:image/png;base64,', '');
+        
         const response = await axios.post(webhookUrl, {
-            image: testImage,
-            filename: 'test-text.png'
+            data: testImageBase64,  // 纯base64数据
+            filename: 'test-text.png',
+            mimeType: 'image/png',
+            originalData: testImage  // 完整格式作为备用
         }, {
             timeout: 15000,
             headers: {
