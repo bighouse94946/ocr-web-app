@@ -105,7 +105,11 @@ https://ocr-web-app-xxx.vercel.app
 ### 问题3: 上传功能报错
 **解决方案**: 检查网络连接，确保n8n webhook可以访问
 
-### 问题4: OCR识别失败
+### 问题4: Vercel配置错误
+**错误**: "The `functions` property cannot be used in conjunction with the `builds` property"
+**解决方案**: 已修复vercel.json配置，移除了builds属性，使用现代的functions配置
+
+### 问题5: OCR识别失败
 **解决方案**: 检查n8n工作流状态和webhook配置
 
 ## 📞 部署成功确认
